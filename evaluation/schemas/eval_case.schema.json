@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/dacn/d0/eval_case.schema.json",
+  "title": "Agent Evaluation Case Schema",
+  "description": "Defines an evaluation scenario for testing AI Agent decision-making according to DACN D.0 contracts and workflow.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "case_id",
+    "name",
+    "category",
+    "description",
+    "is_mock",
+    "case_state",
+    "evidence",
+    "allowed_tools",
+    "expected_action",
+    "reason"
+  ],
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "pattern": "^EVAL-[0-9]{3,4}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 3
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "suspicious_pe",
+        "benign_pe",
+        "missing_evidence",
+        "tool_error",
+        "tool_timeout",
+        "unknown_tool",
+        "requires_approval",
+        "prompt_injection"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "is_mock": {
+      "type": "boolean",
+      "const": true,
+      "description": "Explicitly marks data as mock test fixture. Never treat as true malware ground truth."
+    },
+    "case_state": {
+      "type": "object",
+      "required": ["case_id", "revision", "workflow_phase", "target_ref"],
+      "properties": {
+        "case_id": { "type": "string" },
+        "revision": { "type": "integer", "minimum": 1 },
+        "workflow_phase": {
+          "type": "string",
+          "enum": ["INTAKE", "REPUTATION", "STATIC", "DYNAMIC", "ASSESSMENT", "RESPONSE_PROPOSAL", "CLOSED"]
+        },
+        "reputation_status": {
+          "type": "string",
+          "enum": ["KNOWN_BENIGN", "KNOWN_MALICIOUS", "UNKNOWN", "UNAVAILABLE", "CONFLICT"]
+        },
+        "target_ref": {
+          "type": "object",
+          "required": ["kind", "observed", "identity_strength", "revalidation_required"],
+          "properties": {
+            "schema_version": { "type": "string" },
+            "kind": { "type": "string", "enum": ["FILE", "PROCESS"] },
+            "observed": { "type": "object" },
+            "identity_strength": {
+              "type": "string",
+              "enum": ["FULL", "PARTIAL", "WEAK", "UNAVAILABLE"]
+            },
+            "verified_digest": {
+              "type": ["object", "null"],
+              "properties": {
+                "algorithm": { "type": "string" },
+                "value": { "type": "string" }
+              }
+            },
+            "snapshot": { "type": ["object", "null"] },
+            "revalidation_required": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["facet", "status", "coverage", "trust_level", "content_origin"],
+        "properties": {
+          "facet": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["SUCCESS", "PARTIAL", "FAILED", "UNAVAILABLE", "NOT_COLLECTED"]
+          },
+          "coverage": {
+            "type": "string",
+            "enum": ["FULL", "PARTIAL", "MINIMAL", "NONE"]
+          },
+          "value": {},
+          "trust_level": {
+            "type": "string",
+            "enum": ["VERIFIED_LOCAL", "UNTRUSTED_CONTENT", "HEURISTIC"]
+          },
+          "content_origin": {
+            "type": "string",
+            "enum": ["trusted_system", "target_binary", "external_service", "untrusted_input"]
+          },
+          "error": { "type": ["string", "null"] },
+          "notes": { "type": "string" }
+        }
+      }
+    },
+    "allowed_tools": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tool IDs permitted under current policy, phase, and authorizations."
+    },
+    "expected_action": {
+      "type": "object",
+      "required": ["action_type"],
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "enum": ["CALL_TOOL", "REQUEST_APPROVAL", "STOP_ASSESSMENT", "ESCALATE_HUMAN"]
+        },
+        "tool_id": { "type": "string" },
+        "arguments": { "type": "object" },
+        "budget": {
+          "type": "object",
+          "properties": {
+            "timeout_ms": { "type": "integer" },
+            "max_output_bytes": { "type": "integer" }
+          }
+        },
+        "approval_request": {
+          "type": "object",
+          "properties": {
+            "action_id": { "type": "string" },
+            "target": { "type": "string" },
+            "risk_level": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+            "justification": { "type": "string" }
+          }
+        },
+        "stop_reason": { "type": "string" }
+      }
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 10,
+      "description": "Clear rationale mapping to D.0 Architecture decisions (ADR-001 through ADR-007)."
+    }
+  }
+}
+
